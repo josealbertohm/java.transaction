@@ -1,0 +1,29 @@
+#!/bin/sh
+
+if [ $# -lt 2 ];
+then
+    echo "Missing parameter(s)"
+    exit 0
+fi
+
+USER_ID=$1
+CMD=$2
+shift
+shift
+
+CLASSPATH=./com.pay.clip.transactions-0.0.1-jar-with-dependencies.jar
+
+if [ "${CMD}" == "add" ];
+then
+    FILE=/tmp/.input.json
+    echo $@ > ${FILE}
+    java -classpath ${CLASSPATH} com.pay.clip.Application -user ${USER_ID} -command ${CMD} -transaction ${FILE}
+    rm -f ${FILE}
+elif [ "${CMD}" == "list" ] || [ "${CMD}" == "sum" ];
+then
+    java -classpath ${CLASSPATH} com.pay.clip.Application -user ${USER_ID} -command ${CMD}
+else
+    java -classpath ${CLASSPATH} com.pay.clip.Application -user ${USER_ID} -id ${CMD}
+fi
+
+
