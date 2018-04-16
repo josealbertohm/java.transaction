@@ -42,8 +42,11 @@ public class Application {
 		return true;
 	}
 	
-	protected void showTransactions(ResultSet records) {
+	protected void showTransactions(ResultSet records, BigInteger user_id) {
         try {
+        	if (user_id == null) {
+        		System.out.println("[");
+        	}
 			while (records.next()) {
 	        	Transaction tx = new Transaction(
 	        			records.getString("transaction_id"),
@@ -52,8 +55,19 @@ public class Application {
 	        			records.getString("date"),
 	        			new BigDecimal(records.getString("amount"))
 	        			);
-	        	System.out.println(tx.toJson());
+	        	if (user_id != null) {
+	        		if (user_id.equals(tx.getUser_id())) {
+	        			System.out.println(tx.toJson());
+	        		} else {
+	        			System.out.println("The user id " + user_id + " is not the owner of the transaction id " + tx.getTransaction_id());
+	        		}
+	        	} else {
+	        		System.out.println(tx.toJson());
+	        	}
 	        }
+        	if (user_id == null) {
+        		System.out.println("]");
+        	}
 			records.close();
         } catch (SQLException e) {
         	logger.error(e.getMessage());
@@ -63,7 +77,7 @@ public class Application {
 	
 	protected ResultSet getUserTransactions(BigInteger user_id) {
 		Hsqldb db = new Hsqldb();
-		return db.query("SELECT * FROM transactions WHERE user_id=" + user_id);
+		return db.query("SELECT * FROM transactions WHERE user_id=" + user_id + " ORDER BY date");
 	}
 	
 	public BigInteger getUserIdAsBigInteger() {
@@ -83,11 +97,11 @@ public class Application {
 		return tx;
 	}
 
-	public void show_transaction(String transaction_id) {
+	public void show_transaction(String transaction_id, BigInteger user_id) {
 		Hsqldb db = new Hsqldb();
 		ResultSet records = db.query("SELECT * FROM transactions WHERE transaction_id='" + transaction_id + "'");
 		if (records != null) {
-			this.showTransactions(records);
+			this.showTransactions(records, user_id);
 			try {
 				records.close();
 			} catch (SQLException e) {
@@ -99,7 +113,12 @@ public class Application {
 	public void show_transactions(BigInteger user_id) {
 		ResultSet records = this.getUserTransactions(user_id);
 		if (records != null) {
-			this.showTransactions(records);
+			this.showTransactions(records, null);
+			try {
+				records.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -184,7 +203,7 @@ public class Application {
         
         // Default case is to show a transaction detail
         default:
-        	app.show_transaction(app.transaction_id);
+        	app.show_transaction(app.transaction_id, app.getUserIdAsBigInteger());
         	break;
         }
         
